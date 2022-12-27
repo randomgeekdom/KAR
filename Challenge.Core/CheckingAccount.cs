@@ -1,4 +1,4 @@
-﻿namespace Challenge.Core.Models
+﻿namespace Challenge.Core
 {
     public class CheckingAccount : Account
     {
