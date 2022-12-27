@@ -4,6 +4,7 @@ namespace Challenge.Core.Tests
 {
     public class AccountServiceTests
     {
+        private Guid realCustomerId = Guid.Parse("d172f53e-24be-408a-ad21-ba654cde9553");
         private readonly AccountService sut = new AccountService();
 
         #region WithdrawTests
@@ -11,28 +12,35 @@ namespace Challenge.Core.Tests
         public void WhenWithdrawingAndAmountIsNotGreaterThanZero_ThenUnsuccessful()
         {
             var account = this.GetCheckingAccount(500);
-            Assert.False(sut.Withdraw(account, -4).IsSuccessful);
+            Assert.False(sut.Withdraw(account, -4, realCustomerId).IsSuccessful);
         }
 
         [Fact]
         public void WhenWithdrawingAndAmountIsGreaterThanBalance_ThenUnsuccessful()
         {
             var account = this.GetCheckingAccount(400);
-            Assert.False(sut.Withdraw(account, 401).IsSuccessful);
+            Assert.False(sut.Withdraw(account, 401, realCustomerId).IsSuccessful);
         }
 
         [Fact]
         public void WhenWithdrawingAndAmountIsGreaterThanWithdrawalLimit_ThenUnsuccessful()
         {
             var account = this.GetCheckingAccount(50000);
-            Assert.False(sut.Withdraw(account, 501).IsSuccessful);
+            Assert.False(sut.Withdraw(account, 501, realCustomerId).IsSuccessful);
+        }
+
+        [Fact]
+        public void WhenWithdrawingAndCurrentCustomerIsNotOwner_ThenUnsuccessful()
+        {
+            var account = this.GetCheckingAccount(500);
+            Assert.False(sut.Withdraw(account, 50, Guid.Empty).IsSuccessful);
         }
 
         [Fact]
         public void WhenWithdrawingThenWithdraw()
         {
             var account = this.GetCheckingAccount(50000);
-            var result = sut.Withdraw(account, 400);
+            var result = sut.Withdraw(account, 400, realCustomerId);
             Assert.True(result.IsSuccessful);
             Assert.Equal(400, result.DispenseAmount);
             Assert.Equal(49600, account.Balance);
@@ -48,7 +56,7 @@ namespace Challenge.Core.Tests
         {
             var account = this.GetCheckingAccount(500);
             var account2 = this.GetInvestmentAccount(500);
-            Assert.False(sut.Transfer(account, account2, -4).IsSuccessful);
+            Assert.False(sut.Transfer(account, account2, -4, realCustomerId).IsSuccessful);
         }
 
         [Fact]
@@ -56,7 +64,15 @@ namespace Challenge.Core.Tests
         {
             var account = this.GetCheckingAccount(300);
             var account2 = this.GetInvestmentAccount(500);
-            Assert.False(sut.Transfer(account, account2, 301).IsSuccessful);
+            Assert.False(sut.Transfer(account, account2, 301, realCustomerId).IsSuccessful);
+        }
+
+        [Fact]
+        public void WhenTransferringAndCurrentCustomerIsNotOwnerOfFromAccount_ThenUnsuccessful()
+        {
+            var account = this.GetCheckingAccount(500);
+            var account2 = this.GetInvestmentAccount(500);
+            Assert.False(sut.Transfer(account, account2, 50, Guid.Empty).IsSuccessful);
         }
 
         [Fact]
@@ -64,7 +80,7 @@ namespace Challenge.Core.Tests
         {
             var account = this.GetCheckingAccount(500);
             var account2 = this.GetInvestmentAccount(500);
-            var result = sut.Transfer(account, account2, 400);
+            var result = sut.Transfer(account, account2, 400, realCustomerId);
             Assert.True(result.IsSuccessful);
             Assert.Equal(100, account.Balance);
             Assert.Equal(900, account2.Balance);
@@ -96,7 +112,8 @@ namespace Challenge.Core.Tests
             return new CheckingAccount
             {
                 Number = "1",
-                Balance = balance
+                Balance = balance,
+                OwnerId = realCustomerId
             };
         }
 
@@ -105,7 +122,8 @@ namespace Challenge.Core.Tests
             return new CorporateInvestmentAccount
             {
                 Number = "2",
-                Balance = balance
+                Balance = balance,
+                OwnerId = realCustomerId
             };
         }
     }
